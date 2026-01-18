@@ -85,7 +85,6 @@ func (i *Instance) SearchProducts(locale, query string, offset, limit int) ([]mo
 func (i *Instance) SearchAll(locale, query string) ([]types.SearchResult, error) {
 	var results []types.SearchResult
 
-	// Ищем продукты
 	products, _, err := i.lts.SearchProducts(locale, query, 0, 10)
 	if err == nil {
 		for _, p := range products {
@@ -119,7 +118,6 @@ func (i *Instance) SearchAll(locale, query string) ([]types.SearchResult, error)
 		}
 	}
 
-	// Ищем новости
 	news, _, err := i.lts.SearchNews(locale, query, 0, 10)
 	if err == nil {
 		for _, n := range news {
@@ -144,7 +142,6 @@ func (i *Instance) SearchAll(locale, query string) ([]types.SearchResult, error)
 		}
 	}
 
-	// Ищем страницы
 	pages, err := i.lts.SearchPages(locale, query)
 	if err == nil {
 		for _, p := range pages {
@@ -166,7 +163,6 @@ func (i *Instance) SearchAll(locale, query string) ([]types.SearchResult, error)
 		}
 	}
 
-	// Ищем документы
 	docs, err := i.lts.SearchDocuments(locale, query)
 	if err == nil {
 		for _, d := range docs {
@@ -228,7 +224,6 @@ func (i *Instance) SaveFeedback(feedback types.FeedbackRequest) (uint, error) {
 }
 
 func (i *Instance) GetTranslation(key, locale string) string {
-	// TODO: Реализовать получение переводов из БД
 	return key
 }
 
@@ -258,7 +253,6 @@ func (i *Instance) GenerateSitemap(locale string) (string, error) {
 	</url>`, i.cfg.SiteURL, locale, page.path, page.priority))
 	}
 
-	// Продукты
 	products, _, err := i.lts.GetProducts(locale, 0, 1000)
 	if err == nil {
 		for _, product := range products {
@@ -271,7 +265,6 @@ func (i *Instance) GenerateSitemap(locale string) (string, error) {
 		}
 	}
 
-	// Новости
 	news, _, err := i.lts.GetNews(locale, 0, 100)
 	if err == nil {
 		for _, item := range news {
@@ -290,6 +283,5 @@ func (i *Instance) GenerateSitemap(locale string) (string, error) {
 }
 
 func (i *Instance) GetAvailableLanguages() []string {
-	// TODO: Получать из БД
 	return []string{"ru", "en", "pl"}
 }

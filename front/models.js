@@ -3,13 +3,27 @@ class Page {
         this.id = data.page_id || data.id;
         this.slug = data.slug;
         this.template = data.template;
-        this.translations = data.translations || {};
+        this.translations = data.translations || [];
         this.createdAt = data.created_at;
         this.updatedAt = data.updated_at;
     }
     
     getTranslation(locale) {
-        return this.translations[locale] || this.translations['ru'] || {};
+        const translation = this.translations.find(t => t.language_code === locale);
+        if (translation) return translation;
+        
+        const ruTranslation = this.translations.find(t => t.language_code === 'ru');
+        if (ruTranslation) return ruTranslation;
+        
+        return {};
+    }
+    
+    getTranslationsMap() {
+        const map = {};
+        this.translations.forEach(translation => {
+            map[translation.language_code] = translation;
+        });
+        return map;
     }
 }
 
@@ -18,7 +32,16 @@ class ProductCategory {
         this.id = data.id;
         this.parentId = data.parent_id;
         this.sortOrder = data.sort_order;
-        this.translations = data.translations || {};
+        this.translationsArray = data.translations || [];
+        this.translations = this.createTranslationsMap();
+    }
+    
+    createTranslationsMap() {
+        const map = {};
+        this.translationsArray.forEach(translation => {
+            map[translation.language_code] = translation;
+        });
+        return map;
     }
     
     getName(locale) {
@@ -35,9 +58,18 @@ class Product {
         this.imageUrl = data.image_url;
         this.fileUrl = data.file_url;
         this.sortOrder = data.sort_order;
-        this.translations = data.translations || {};
+        this.translationsArray = data.translations || [];
+        this.translations = this.createTranslationsMap();
         this.specs = data.specs || [];
         this.category = data.category;
+    }
+    
+    createTranslationsMap() {
+        const map = {};
+        this.translationsArray.forEach(translation => {
+            map[translation.language_code] = translation;
+        });
+        return map;
     }
     
     getName(locale) {
@@ -58,7 +90,15 @@ class News {
         this.published = data.published;
         this.createdAt = data.created_at;
         this.updatedAt = data.updated_at;
-        this.translations = data.translations || {};
+        this.translations = this.createTranslationsMap;
+    }
+
+     createTranslationsMap() {
+        const map = {};
+        this.translationsArray.forEach(translation => {
+            map[translation.language_code] = translation;
+        });
+        return map;
     }
     
     getTitle(locale) {
@@ -78,7 +118,15 @@ class Document {
         this.fileUrl = data.file_url;
         this.type = data.type;
         this.createdAt = data.created_at;
-        this.translations = data.translations || {};
+        this.translations = this.createTranslationsMap;
+    }
+    
+    createTranslationsMap() {
+        const map = {};
+        this.translationsArray.forEach(translation => {
+            map[translation.language_code] = translation;
+        });
+        return map;
     }
     
     getTitle(locale) {
@@ -93,7 +141,15 @@ class Contact {
         this.type = data.type;
         this.value = data.value;
         this.sortOrder = data.sort_order;
-        this.translations = data.translations || {};
+        this.translations = this.createTranslationsMap;
+    }
+    
+    createTranslationsMap() {
+        const map = {};
+        this.translationsArray.forEach(translation => {
+            map[translation.language_code] = translation;
+        });
+        return map;
     }
     
     getLabel(locale) {
@@ -112,9 +168,6 @@ class Feedback {
     }
 }
 
-/**
- * Хранилище состояния приложения
- */
 class Store {
     constructor() {
         this.state = {
@@ -149,6 +202,14 @@ class Store {
         this.setState({ locale });
         localStorage.setItem('locale', locale);
         document.documentElement.lang = locale;
+    }
+
+    findNews(newsID){
+
+    }
+
+    findProduct(productID){
+        
     }
 }
 

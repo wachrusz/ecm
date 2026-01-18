@@ -55,6 +55,7 @@ func (i *Instance) GetPageBySlug(slug, locale string) (*models.Page, error) {
 	var page models.Page
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Where("slug = ?", slug).
 		First(&page).Error
@@ -70,6 +71,7 @@ func (i *Instance) GetCategories(locale string) ([]models.ProductCategory, error
 	var categories []models.ProductCategory
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Preload("Children.Translations", "language_code = ?", locale).
 		Where("parent_id IS NULL").
@@ -84,6 +86,7 @@ func (i *Instance) GetCategoryBySlug(slug, locale string) (*models.ProductCatego
 	var categories []models.ProductCategory
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Preload("Children.Translations", "language_code = ?", locale).
 		Find(&categories).Error
@@ -92,10 +95,8 @@ func (i *Instance) GetCategoryBySlug(slug, locale string) (*models.ProductCatego
 		return nil, err
 	}
 
-	// Ищем категорию по slug (преобразуем название в slug)
 	for _, cat := range categories {
 		for _, trans := range cat.Translations {
-			// Простой slugify
 			nameSlug := strings.ToLower(strings.ReplaceAll(trans.Name, " ", "-"))
 			if nameSlug == slug {
 				return &cat, nil
@@ -110,6 +111,7 @@ func (i *Instance) GetCategoryByID(id uint, locale string) (*models.ProductCateg
 	var category models.ProductCategory
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Preload("Children.Translations", "language_code = ?", locale).
 		Where("id = ?", id).
@@ -122,6 +124,7 @@ func (i *Instance) GetProductCountByCategory(categoryID uint) (int, error) {
 	var count int64
 
 	err := i.db.Model(&models.Product{}).
+		Debug().
 		Where("category_id = ?", categoryID).
 		Count(&count).Error
 
@@ -132,11 +135,10 @@ func (i *Instance) GetProducts(locale string, offset, limit int) ([]models.Produ
 	var products []models.Product
 	var total int64
 
-	// Считаем общее количество
 	i.db.Model(&models.Product{}).Count(&total)
 
-	// Получаем продукты с переводами
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Preload("Specs.Translations", "language_code = ?", locale).
 		Preload("Category.Translations", "language_code = ?", locale).
@@ -152,13 +154,13 @@ func (i *Instance) GetProductsByCategory(locale string, categoryID uint, offset,
 	var products []models.Product
 	var total int64
 
-	// Считаем общее количество
 	i.db.Model(&models.Product{}).
+		Debug().
 		Where("category_id = ?", categoryID).
 		Count(&total)
 
-	// Получаем продукты категории
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Preload("Specs.Translations", "language_code = ?", locale).
 		Preload("Category.Translations", "language_code = ?", locale).
@@ -175,6 +177,7 @@ func (i *Instance) GetProductByID(id uint, locale string) (*models.Product, erro
 	var product models.Product
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Preload("Specs.Translations", "language_code = ?", locale).
 		Preload("Category.Translations", "language_code = ?", locale).
@@ -188,6 +191,7 @@ func (i *Instance) GetRelatedProducts(locale string, categoryID, excludeID uint,
 	var products []models.Product
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Preload("Category.Translations", "language_code = ?", locale).
 		Where("category_id = ? AND id != ?", categoryID, excludeID).
@@ -204,18 +208,19 @@ func (i *Instance) SearchProducts(locale, query string, offset, limit int) ([]mo
 
 	query = "%" + strings.ToLower(query) + "%"
 
-	// Считаем общее количество через подзапрос
 	subQuery := i.db.Model(&models.ProductTranslation{}).
+		Debug().
 		Select("product_id").
 		Where("(LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(short_description) LIKE ?) AND language_code = ?",
 			query, query, query, locale)
 
 	i.db.Model(&models.Product{}).
+		Debug().
 		Where("id IN (?)", subQuery).
 		Count(&total)
 
-	// Получаем продукты
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Preload("Specs.Translations", "language_code = ?", locale).
 		Preload("Category.Translations", "language_code = ?", locale).
@@ -232,41 +237,38 @@ func (i *Instance) FilterProducts(locale string, categoryID uint, search, sortBy
 	var products []models.Product
 	var total int64
 
-	// Строим запрос
 	query := i.db.Model(&models.Product{})
 
-	// Фильтр по категории
 	if categoryID > 0 {
 		query = query.Where("category_id = ?", categoryID)
 	}
 
-	// Поиск
 	if search != "" {
 		searchQuery := "%" + strings.ToLower(search) + "%"
 		subQuery := i.db.Model(&models.ProductTranslation{}).
+			Debug().
 			Select("product_id").
 			Where("(LOWER(name) LIKE ? OR LOWER(description) LIKE ?) AND language_code = ?",
 				searchQuery, searchQuery, locale)
 		query = query.Where("id IN (?)", subQuery)
 	}
 
-	// Считаем общее количество
 	query.Count(&total)
 
-	// Сортировка
-	if sortBy == "name" {
-		// Для сортировки по имени нужно джойнить переводы
+	switch sortBy {
+	case "name":
 		query = query.
+			Debug().
 			Joins("LEFT JOIN product_translations ON products.id = product_translations.product_id AND product_translations.language_code = ?", locale).
 			Order("product_translations.name " + sortOrder)
-	} else if sortBy == "created_at" {
+	case "created_at":
 		query = query.Order("created_at " + sortOrder)
-	} else {
+	default:
 		query = query.Order("sort_order " + sortOrder)
 	}
 
-	// Выполняем запрос
 	err := query.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Preload("Specs.Translations", "language_code = ?", locale).
 		Preload("Category.Translations", "language_code = ?", locale).
@@ -281,13 +283,12 @@ func (i *Instance) GetNews(locale string, offset, limit int) ([]models.News, int
 	var news []models.News
 	var total int64
 
-	// Считаем общее количество
 	i.db.Model(&models.News{}).
 		Where("published = ?", true).
 		Count(&total)
 
-	// Получаем новости
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Where("published = ?", true).
 		Offset(offset).
@@ -302,6 +303,7 @@ func (i *Instance) GetNewsByID(id uint, locale string) (*models.News, error) {
 	var news models.News
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Where("id = ? AND published = ?", id, true).
 		First(&news).Error
@@ -315,18 +317,19 @@ func (i *Instance) SearchNews(locale, query string, offset, limit int) ([]models
 
 	query = "%" + strings.ToLower(query) + "%"
 
-	// Считаем общее количество
 	subQuery := i.db.Model(&models.NewsTranslation{}).
+		Debug().
 		Select("news_id").
 		Where("(LOWER(title) LIKE ? OR LOWER(content) LIKE ? OR LOWER(excerpt) LIKE ?) AND language_code = ?",
 			query, query, query, locale)
 
 	i.db.Model(&models.News{}).
+		Debug().
 		Where("id IN (?) AND published = ?", subQuery, true).
 		Count(&total)
 
-	// Получаем новости
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Where("id IN (?) AND published = ?", subQuery, true).
 		Offset(offset).
@@ -341,6 +344,7 @@ func (i *Instance) GetDocumentsByType(docType, locale string) ([]models.Document
 	var documents []models.Document
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Where("type = ?", docType).
 		Order("created_at DESC").
@@ -355,6 +359,7 @@ func (i *Instance) SearchDocuments(locale, query string) ([]models.Document, err
 	query = "%" + strings.ToLower(query) + "%"
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Joins("LEFT JOIN document_translations ON documents.id = document_translations.document_id AND document_translations.language_code = ?", locale).
 		Where("LOWER(document_translations.title) LIKE ? OR LOWER(document_translations.description) LIKE ?", query, query).
@@ -368,6 +373,7 @@ func (i *Instance) GetContactsByType(contactType, locale string) ([]models.Conta
 	var contacts []models.Contact
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Where("type = ?", contactType).
 		Order("sort_order ASC").
@@ -382,6 +388,7 @@ func (i *Instance) SearchPages(locale, query string) ([]models.Page, error) {
 	query = "%" + strings.ToLower(query) + "%"
 
 	err := i.db.
+		Debug().
 		Preload("Translations", "language_code = ?", locale).
 		Joins("LEFT JOIN page_translations ON pages.id = page_translations.page_id AND page_translations.language_code = ?", locale).
 		Where("LOWER(page_translations.title) LIKE ? OR LOWER(page_translations.content) LIKE ?", query, query).

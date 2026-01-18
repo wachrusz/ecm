@@ -102,7 +102,6 @@ class HeaderComponent {
             });
         }
         
-        // Поиск
         const searchBtn = document.getElementById('searchBtn');
         const searchInput = document.getElementById('searchInput');
         if (searchBtn && searchInput) {
@@ -123,4 +122,9 @@ class HeaderComponent {
             });
         }
     }
+}
+
+if (typeof window !== 'undefined') {
+    window.HeaderComponent = HeaderComponent;
+    console.log('✅ HeaderComponent exported to window');
 }

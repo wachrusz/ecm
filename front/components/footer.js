@@ -119,3 +119,8 @@ class FooterComponent {
         return re.test(email);
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.FooterComponent = FooterComponent;
+    console.log('✅ FooterComponent exported to window');
+}

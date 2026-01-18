@@ -32,7 +32,7 @@ type PageTranslation struct {
 
 // ProductCategory - категории продукции
 type ProductCategory struct {
-	ID           uint                         `json:"id" gorm:"column:product_category_id;primaryKey;autoIncrement"`
+	ID           uint                         `json:"id" gorm:"column:category_id;primaryKey;autoIncrement"`
 	ParentID     *uint                        `json:"parent_id" gorm:"column:parent_id;index"`
 	SortOrder    int                          `json:"sort_order" gorm:"column:sort_order;default:0"`
 	CreatedAt    time.Time                    `json:"created_at" gorm:"column:created_at;autoCreateTime"`
